@@ -1,1 +1,175 @@
-hi new 
+1. Linux Basics
+What is Linux?
+What is the difference between Linux and Unix?
+What is a Linux distribution? Give examples.
+What is the Linux kernel?
+What happens when you run a command in Linux?
+What is root user?
+What is the difference between root and normal users?
+What is a shell?
+What is Bash?
+What is the difference between CLI and GUI?
+2. File & Directory Commands
+How do you list files?
+How do you show hidden files?
+How do you create a file?
+How do you create a directory?
+How do you copy a file?
+How do you move/rename a file?
+How do you delete a file?
+How do you delete a directory?
+What is the difference between rm, rmdir, and rm -r?
+What is the difference between an absolute path and relative path?
+3. File Permissions ⭐
+Explain Linux file permissions.
+What do r, w, and x mean?
+Explain:
+-rwxr-xr--
+What are user, group, and others?
+What does chmod do?
+What is the difference between:
+chmod 755 file
+chmod 644 file
+What does chown do?
+What does chgrp do?
+What is sudo?
+4. Processes ⭐⭐⭐
+What is a process?
+What is the difference between a process and a thread?
+How do you check running processes?
+ps
+ps aux
+top
+What is htop?
+How do you kill a process?
+kill PID
+kill -9 PID
+What is the difference between SIGTERM and SIGKILL?
+What is a PID?
+What is a zombie process?
+What is a background process?
+What does & do?
+What are jobs, fg, and bg?
+5. Networking ⭐⭐⭐
+How do you check the IP address?
+ip addr
+What is the difference between private IP and public IP?
+What is a port?
+What is the difference between TCP and UDP?
+What is DNS?
+How do you test network connectivity?
+ping
+How do you check open/listening ports?
+ss -tulnp
+What does curl do?
+What does wget do?
+What is the difference between curl and ping?
+6. SSH ⭐⭐⭐
+What is SSH?
+How do you connect to a remote Linux server?
+ssh username@server-ip
+What is the default SSH port?
+22
+What is an SSH key pair?
+What are public and private keys?
+Where is the SSH private key usually stored?
+What is ~/.ssh/authorized_keys?
+How do you copy a file to a remote server?
+scp file.txt user@server:/path/
+What is the difference between SSH and SCP?
+How would you troubleshoot if SSH connection fails?
+7. Disk & Memory ⭐⭐⭐
+How do you check disk usage?
+df -h
+How do you find the size of a directory?
+du -sh directory
+How do you check RAM usage?
+free -h
+How do you check CPU usage?
+What is the difference between df and du?
+What happens when a Linux server runs out of disk space?
+How would you troubleshoot high memory usage?
+8. Logs & Services ⭐⭐⭐
+Where are Linux logs stored?
+What is /var/log?
+How do you view logs?
+cat
+less
+tail
+What does this do?
+tail -f app.log
+What is systemctl?
+How do you check whether a service is running?
+systemctl status nginx
+How do you start/stop/restart a service?
+systemctl start nginx
+systemctl stop nginx
+systemctl restart nginx
+What is journalctl?
+🔥 DevOps Scenario Questions
+
+These are more important than memorizing 75 definitions.
+
+76. Your server is running very slowly. How will you troubleshoot it?
+
+Expected approach:
+
+CPU → Memory → Disk → Processes → Network → Logs
+
+77. Your application is not accessible from the browser. What will you check?
+
+Application
+   ↓
+Process
+   ↓
+Port
+   ↓
+Firewall
+   ↓
+Network
+   ↓
+DNS
+
+Useful commands:
+
+ps aux
+ss -tulnp
+curl
+ping
+ip addr
+
+78. SSH is not working. How will you troubleshoot?
+
+Check:
+
+IP address
+↓
+Network connectivity
+↓
+Port 22
+↓
+SSH service
+↓
+Firewall
+↓
+Username
+↓
+SSH key/permissions
+
+79. Disk usage is 100%. What will you do?
+
+df -h
+du -sh /*
+du -sh /var/log/*
+
+Then identify large files/directories and safely clean or rotate logs.
+
+80. A process is consuming 100% CPU. What will you do?
+
+top
+ps aux --sort=-%cpu
+
+Find the PID → investigate → gracefully terminate if appropriate.
+
+
+bug is fixed 
