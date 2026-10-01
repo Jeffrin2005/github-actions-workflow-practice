@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo 'Tests passed successfully!'",
     "start": "node server.js",
-    "build": "echo 'Fake build successful!'"
+    "build": "mkdir dist && echo '<h1>Fake App</h1>' > dist/index.html"
   },
   "repository": {
     "type": "git",
