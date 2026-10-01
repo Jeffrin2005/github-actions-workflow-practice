@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: hr-backend 
+spec:
+  replicas: 2 
+  selector:
+    matchLabels:
+      app: hr-backend
+  template:
+    metadata:
+      labels:
+        app: hr-backend  
+      
+    spec: 
+      containers:
+      - name: backend 
+        image: jeffrinjojo/hr-backend:10
+        ports:
+        - containerPort: 5000 
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "250m"
+            memory: "256Mi"
+
+        env:
+        - name: MONGODB_URL 
+          valueFrom:
+            secretKeyRef:
+              name: hr-app-secrets 
+              key: MONGODB_URL 
+
+
+---
+apiVersion: v1 
+kind: Service 
+metadata:
+  name: backend-service 
+spec: 
+  selector:
+    app: hr-backend 
+
+  ports:
+    - protocol: TCP 
+      port: 5000 
+      targetPort: 5000 
+  type: ClusterIP 
+
+
+
+
+        
+          
+      
+        
+
+
+
+

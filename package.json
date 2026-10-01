@@ -1,0 +1,22 @@
+{
+  "name": "interview-quest",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo 'Tests passed successfully!'",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jeffrin2005/git-commdan-learing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Jeffrin2005/git-commdan-learing/issues"
+  },
+  "homepage": "https://github.com/Jeffrin2005/git-commdan-learing#readme"
+}

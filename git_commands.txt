@@ -1,0 +1,1305 @@
+# GIT + GITHUB — DEVOPS INTERVIEW MASTER CHEAT SHEET
+
+## 1. CORE GIT WORKFLOW
+
+### The 3 important areas
+
+```text
+Working Directory
+       |
+       | git add
+       ↓
+Staging Area
+       |
+       | git commit
+       ↓
+Local Repository
+       |
+       | git push
+       ↓
+GitHub / Remote Repository
+```
+
+### `git init`
+
+```bash
+git init
+```
+
+Creates/initializes a Git repository in the current folder.
+
+### `git status`
+
+```bash
+git status
+```
+
+Shows:
+
+* Current branch
+* Modified files
+* Staged files
+* Untracked files
+
+### `git add`
+
+Add one file:
+
+```bash
+git add test.txt
+```
+
+Add everything:
+
+```bash
+git add .
+```
+
+**Meaning:** Moves changes from the working directory to the staging area.
+
+### `git commit`
+
+```bash
+git commit -m "My first commit"
+```
+
+Creates a commit from the staged changes.
+
+### `git log`
+
+```bash
+git log
+```
+
+Shows detailed commit history.
+
+### `git log --oneline`
+
+```bash
+git log --oneline
+```
+
+Shows compact commit history.
+
+Example:
+
+```text
+a82f31c Add login feature
+91bc2aa Initial commit
+```
+
+---
+
+# 2. STAGING AND UNSTAGING
+
+### Unstage a file after commits exist
+
+```bash
+git restore --staged test.txt
+```
+
+Removes the file from staging but keeps the file.
+
+Another method:
+
+```bash
+git reset HEAD test.txt
+```
+
+### Before the first commit
+
+If the repository has **zero commits**, `HEAD` does not point to a commit yet.
+
+So:
+
+```bash
+git restore --staged test.txt
+```
+
+can produce:
+
+```text
+fatal: could not resolve 'HEAD'
+```
+
+Use:
+
+```bash
+git rm --cached test.txt
+```
+
+Meaning:
+
+> Remove the file from the staging/index, but keep the actual file on your computer.
+
+---
+
+# 3. `git reset`
+
+Used mainly when you have **not pushed/shared the commit**.
+
+Suppose:
+
+```text
+A → B → C
+        ↑
+       HEAD
+```
+
+You want to go back one commit.
+
+## `--soft`
+
+```bash
+git reset --soft HEAD~1
+```
+
+Meaning:
+
+> Remove the latest commit, but keep its changes staged.
+
+```text
+Commit       ❌
+Staging      ✅
+Working file ✅
+```
+
+---
+
+## `--mixed`
+
+```bash
+git reset --mixed HEAD~1
+```
+
+or:
+
+```bash
+git reset HEAD~1
+```
+
+Meaning:
+
+> Remove the latest commit, keep the changes, but unstage them.
+
+```text
+Commit       ❌
+Staging      ❌
+Working file ✅
+```
+
+---
+
+## `--hard`
+
+```bash
+git reset --hard HEAD~1
+```
+
+Meaning:
+
+> Remove the latest commit and discard the changes introduced by it from the working tree.
+
+```text
+Commit       ❌
+Staging      ❌
+Working file ❌
+```
+
+⚠️ Dangerous.
+
+### Easy memory:
+
+```text
+soft  → staged
+mixed → unstaged
+hard  → discarded
+```
+
+---
+
+# 4. ROOT COMMIT — `git update-ref -d HEAD`
+
+This is the command you correctly noticed was missing.
+
+Suppose you have made **only your first commit**:
+
+```text
+A
+↑
+first/root commit
+```
+
+There is no previous commit.
+
+Therefore:
+
+```bash
+git reset HEAD~1
+```
+
+cannot work because there is no parent of `HEAD`.
+
+You can use:
+
+```bash
+git update-ref -d HEAD
+```
+
+### Meaning
+
+It deletes the `HEAD` reference to the root commit and takes the repository back to a state with **zero commits**.
+
+### Important
+
+```text
+git reset HEAD~1
+```
+
+→ works when there is a previous commit.
+
+```text
+git update-ref -d HEAD
+```
+
+→ special case for removing the root/first commit.
+
+---
+
+# 5. RESET VS REVERT
+
+## Reset — local undo
+
+```bash
+git reset HEAD~1
+```
+
+Removes the latest commit from the current branch history and, with the default mixed mode, keeps its changes unstaged.
+
+Use carefully for local/unpublished history.
+
+---
+
+## Revert — public/shared undo
+
+```bash
+git revert HEAD
+```
+
+Creates a **new commit** that reverses the changes from the previous commit.
+
+Example:
+
+```text
+Before:
+
+A → B → C
+        ↑
+       bad commit
+
+After revert:
+
+A → B → C → D
+            ↑
+       revert commit
+```
+
+The original commit C remains in history.
+
+### Important difference
+
+```text
+reset  → rewrite/move history
+revert → create a new undo commit
+```
+
+If Git opens Vim during `git revert`, save and exit with:
+
+```text
+:wq
+```
+
+---
+
+# 6. BRANCHES
+
+### See branches
+
+```bash
+git branch
+```
+
+Example:
+
+```text
+* master
+  feature-login
+  dev
+```
+
+`*` = current branch.
+
+### Create a branch
+
+```bash
+git branch feature-login
+```
+
+Creates the branch but does not switch to it.
+
+### Create and switch
+
+```bash
+git checkout -b feature-login
+```
+
+Modern alternative:
+
+```bash
+git switch -c feature-login
+```
+
+### Switch branches
+
+```bash
+git checkout feature-login
+```
+
+or:
+
+```bash
+git switch feature-login
+```
+
+### Delete a branch
+
+```bash
+git branch -d feature-login
+```
+
+Usually done after merging.
+
+---
+
+# 7. MERGE
+
+Suppose you have:
+
+```text
+main
+ |
+ A → B
+      \
+       C → D
+           ↑
+        feature
+```
+
+Switch to main:
+
+```bash
+git checkout main
+```
+
+Merge:
+
+```bash
+git merge feature
+```
+
+This integrates the feature branch into main.
+
+After merging:
+
+```bash
+git branch -d feature
+```
+
+can delete the local feature branch.
+
+---
+
+# 8. MERGE CONFLICT
+
+A merge conflict can happen when two branches modify the same part of a file and Git cannot automatically decide which version to keep.
+
+Run:
+
+```bash
+git merge conflict-branch
+```
+
+You may see:
+
+```text
+CONFLICT (content): Merge conflict in test.txt
+Automatic merge failed; fix conflicts and then commit the result.
+```
+
+Git may put markers into the file:
+
+```text
+<<<<<<< HEAD
+This is the text from MAIN
+=======
+This is the text from the branch
+>>>>>>> conflict-branch
+```
+
+### Resolve it
+
+1. Open the file.
+2. Decide which content should remain.
+3. Remove:
+
+```text
+<<<<<<< HEAD
+=======
+>>>>>>> conflict-branch
+```
+
+4. Save the file.
+
+Then:
+
+```bash
+git add test.txt
+```
+
+Finally:
+
+```bash
+git commit -m "Fixed merge conflict"
+```
+
+---
+
+# 9. INTERACTIVE REBASE
+
+Used to rewrite/clean commit history.
+
+## Squash 10 commits
+
+```bash
+git rebase -i HEAD~10
+```
+
+Editor opens:
+
+```text
+pick A First commit
+pick B Small fix
+pick C Another fix
+pick D Typo fix
+...
+```
+
+Keep the first as:
+
+```text
+pick A First commit
+```
+
+Change the remaining commits to:
+
+```text
+squash B Small fix
+squash C Another fix
+squash D Typo fix
+```
+
+Save and exit.
+
+Git then allows you to create one clean commit message.
+
+Example:
+
+```text
+Finished feature
+```
+
+### Result
+
+Before:
+
+```text
+A → B → C → D → E
+```
+
+After squashing:
+
+```text
+A'
+```
+
+---
+
+# 10. DELETE A SPECIFIC COMMIT
+
+Suppose:
+
+```text
+A → B → C → D
+```
+
+You want to delete C.
+
+Use interactive rebase with an appropriate base:
+
+```bash
+git rebase -i <commit-before-the-range>
+```
+
+In the editor, change the unwanted commit:
+
+```text
+pick
+```
+
+to:
+
+```text
+drop
+```
+
+Save with:
+
+```text
+:wq
+```
+
+---
+
+# 11. DELETE THE VERY FIRST COMMIT
+
+For the root/first commit:
+
+```bash
+git rebase -i --root
+```
+
+The editor shows the commits.
+
+Change the first commit:
+
+```text
+pick
+```
+
+to:
+
+```text
+drop
+```
+
+Then save:
+
+```text
+:wq
+```
+
+---
+
+# 12. `git commit --amend`
+
+Used when you just created a commit and want to modify the latest commit.
+
+Example:
+
+```bash
+git commit -m "Add featre"
+```
+
+Typo in message.
+
+Instead of creating another commit:
+
+```bash
+git commit --amend -m "Add feature"
+```
+
+This replaces/modifies the latest commit.
+
+### Memory:
+
+```text
+amend = modify the latest commit
+```
+
+---
+
+# 13. GITHUB REMOTE
+
+### Add GitHub repository as remote
+
+```bash
+git remote add origin <GitHub-URL>
+```
+
+`origin` is the conventional name for the remote.
+
+### View remote
+
+```bash
+git remote
+```
+
+### View remote URLs
+
+```bash
+git remote -v
+```
+
+Example:
+
+```text
+origin  <GitHub-URL> (fetch)
+origin  <GitHub-URL> (push)
+```
+
+---
+
+# 14. GIT PUSH
+
+Send local commits to GitHub.
+
+```bash
+git push origin master
+```
+
+or:
+
+```bash
+git push origin main
+```
+
+### First push
+
+```bash
+git push -u origin master
+```
+
+`-u` sets the upstream branch.
+
+After that, you can usually use:
+
+```bash
+git push
+```
+
+---
+
+# 15. GIT PULL
+
+```bash
+git pull origin main
+```
+
+Downloads remote changes and integrates them into your current branch.
+
+Conceptually:
+
+```text
+git pull
+   =
+git fetch
+   +
+git merge
+```
+
+---
+
+# 16. GIT FETCH VS GIT PULL
+
+## `git fetch`
+
+```bash
+git fetch origin
+```
+
+Downloads remote changes/commits but does not directly integrate them into your current working branch.
+
+Think:
+
+```text
+"Download it, let me inspect it first."
+```
+
+You can review the remote-tracking branch before merging.
+
+---
+
+## `git pull`
+
+```bash
+git pull origin main
+```
+
+Conceptually:
+
+```text
+fetch + merge
+```
+
+It downloads the remote changes and integrates them into your current branch.
+
+### Easy memory:
+
+```text
+FETCH = Download
+PULL  = Download + Integrate
+```
+
+---
+
+# 17. FORCE PUSH
+
+After rewriting history with commands such as:
+
+```bash
+git reset
+git rebase
+git commit --amend
+```
+
+your local history may differ from GitHub.
+
+A safer force-push option is:
+
+```bash
+git push --force-with-lease
+```
+
+It checks that the remote branch hasn't unexpectedly advanced before replacing the remote history.
+
+⚠️ Be extremely careful when rewriting shared branches.
+
+---
+
+# 18. GIT STASH
+
+Suppose you have unfinished code.
+
+Your manager suddenly asks you to switch to `main`.
+
+You don't want to commit unfinished work.
+
+Use:
+
+```bash
+git stash
+```
+
+This temporarily stores your uncommitted changes.
+
+Now you can switch branches.
+
+Later:
+
+```bash
+git stash pop
+```
+
+brings your changes back.
+
+### Memory:
+
+```text
+stash     → temporarily hide unfinished work
+stash pop → bring unfinished work back
+```
+
+---
+
+# 19. GIT REFLOG
+
+`git reflog` shows local movements of `HEAD` and other references.
+
+```bash
+git reflog
+```
+
+Example:
+
+```text
+6554bbe HEAD@{0}: reset: moving to HEAD~1
+abc1234 HEAD@{1}: commit: Add feature
+```
+
+Suppose you accidentally reset/rebased and think a commit disappeared.
+
+Run:
+
+```bash
+git reflog
+```
+
+Find the previous commit ID.
+
+For example:
+
+```text
+abc1234
+```
+
+Then you may recover it with:
+
+```bash
+git reset --hard abc1234
+```
+
+### Memory:
+
+```text
+reflog = lifesaver for recovering previous local HEAD/reference states
+```
+
+---
+
+# 20. CHERRY-PICK
+
+Apply the changes introduced by a specific commit to your current branch.
+
+```bash
+git cherry-pick <commit-id>
+```
+
+Example:
+
+```text
+main:
+A → B
+
+feature:
+A → B → C
+
+You want only C on main:
+
+git cherry-pick C
+```
+
+Result:
+
+```text
+main:
+A → B → C'
+```
+
+---
+
+# 21. COMPLETE DAILY GIT WORKFLOW
+
+```bash
+git status
+
+git switch -c feature-login
+
+# edit files
+
+git status
+
+git add .
+
+git commit -m "Add login feature"
+
+git push -u origin feature-login
+```
+
+Then create a Pull Request on GitHub.
+
+After merging:
+
+```bash
+git switch main
+git pull origin main
+git branch -d feature-login
+```
+
+---
+
+# 22. IMPORTANT COMMAND DIFFERENCES
+
+```text
+git status
+→ What has changed?
+
+git add
+→ Stage changes.
+
+git commit
+→ Record staged changes locally.
+
+git push
+→ Send local commits to GitHub.
+
+git fetch
+→ Download remote updates without integrating them into current branch.
+
+git pull
+→ Fetch + integrate.
+
+git reset
+→ Move/rewrite local history.
+
+git revert
+→ Create a new commit that undoes an earlier commit.
+
+git rebase
+→ Replay/rewrite commits onto another base.
+
+git stash
+→ Temporarily store unfinished changes.
+
+git reflog
+→ See previous local HEAD/reference movements.
+
+git amend
+→ Modify the latest commit.
+```
+
+---
+
+# 23. INTERVIEW QUESTIONS
+
+## What is Git?
+
+Git is a distributed version control system used to track changes in source code and collaborate on software projects.
+
+## What is GitHub?
+
+GitHub is a platform for hosting Git repositories and providing collaboration features such as pull requests, issues, and code review.
+
+## Git vs GitHub?
+
+```text
+Git    = Version control system
+GitHub = Hosting/collaboration platform for Git repositories
+```
+
+## What is the staging area?
+
+The staging area contains changes selected for the next commit.
+
+## What does `git add` do?
+
+Moves changes from the working directory to the staging area.
+
+## What does `git commit` do?
+
+Creates a snapshot of staged changes in the local repository.
+
+## `git push` vs `git pull`?
+
+```text
+push = local → remote
+pull = remote → local + integrate
+```
+
+## `git fetch` vs `git pull`?
+
+```text
+fetch = download remote changes without integrating
+pull  = fetch + integrate
+```
+
+## `git reset` vs `git revert`?
+
+```text
+reset  = moves/rewrites local history
+revert = creates a new commit that reverses an earlier commit
+```
+
+## `soft` vs `mixed` vs `hard`?
+
+```text
+soft  → commit removed, changes staged
+mixed → commit removed, changes unstaged
+hard  → commit removed, changes discarded
+```
+
+## What is a branch?
+
+A separate line of development used to work on changes independently.
+
+## What is a merge conflict?
+
+When Git cannot automatically combine conflicting changes between branches.
+
+## How do you resolve a merge conflict?
+
+```bash
+# manually fix the conflicting file
+git add .
+git commit -m "Resolve merge conflict"
+```
+
+## What is rebase?
+
+Rebase reapplies commits onto another base commit and can be used to create a cleaner/linear history.
+
+## What is stash?
+
+Temporarily stores uncommitted changes.
+
+## What is reflog?
+
+Shows local reference/HEAD movements and can help recover commits after accidental history changes.
+
+## What is amend?
+
+Modifies the latest commit.
+
+## What is cherry-pick?
+
+Applies the changes introduced by a specific commit to the current branch.
+
+---
+
+# 24. COMMANDS TO MEMORIZE
+
+```bash
+git init
+git status
+
+git add <file>
+git add .
+
+git commit -m "message"
+
+git log
+git log --oneline
+
+git branch
+git branch <branch-name>
+git switch <branch-name>
+git switch -c <branch-name>
+git checkout <branch-name>
+git checkout -b <branch-name>
+git branch -d <branch-name>
+
+git merge <branch-name>
+
+git restore --staged <file>
+git rm --cached <file>
+
+git reset HEAD~1
+git reset --soft HEAD~1
+git reset --mixed HEAD~1
+git reset --hard HEAD~1
+
+git update-ref -d HEAD
+
+git revert HEAD
+
+git rebase -i HEAD~N
+git rebase -i --root
+
+git commit --amend -m "message"
+
+git remote
+git remote -v
+git remote add origin <url>
+
+git push
+git push -u origin main
+git push origin main
+
+git fetch
+git fetch origin
+
+git pull
+git pull origin main
+
+git push --force-with-lease
+
+git stash
+git stash pop
+
+git reflog
+
+git cherry-pick <commit-id>
+```
+
+---
+
+# 25. MASTER MEMORY MAP
+
+```text
+                         GIT
+                          |
+          +---------------+---------------+
+          |               |               |
+        TRACK            SAVE           SHARE
+          |               |               |
+       git add         git commit      git push
+          |               |
+          ↓               ↓
+       STAGING        LOCAL RE uPO
+          |
+          |
+     +----+-------------------------+
+     |                              |
+    UNDO                          HISTORY
+     |                              |
+ +---+-------+                +-----+------+
+ |   |       |                |            |
+soft mixed  hard            rebase       amend
+ |   |       |                |            |
+ |   |       |              rewrite      latest
+ |   |       |              history      commit
+ |   |       |
+staged |   discarded
+     unstaged
+
+PUBLIC UNDO
+     |
+ git revert
+
+REMOTE
+  |
+  +-- git fetch
+  |
+  +-- git pull
+  |
+  +-- git push
+
+EMERGENCY
+  |
+  +-- git stash
+  |
+  +-- git reflog
+
+SPECIAL ROOT-COMMIT CASE
+  |
+  +-- git update-ref -d HEAD
+```
+
+# 26. THE COMPLETE GIT FLOW
+
+```text
+                    LOCAL COMPUTER
+                          |
+                          ↓
+                  WORKING DIRECTORY
+                          |
+                       git add
+                          ↓
+                   STAGING AREA
+                          |
+                      git commit
+                          ↓
+                  LOCAL REPOSITORY
+                          |
+                       git push
+                          ↓
+                       GITHUB
+                          |
+                      git fetch
+                          ↓
+              REMOTE-TRACKING REFS
+                          |
+                       git pull
+                          ↓
+                LOCAL + INTEGRATION
+```
+
+# 27. FINAL 1-LINE REVISION
+
+```text
+git init
+→ create Git repository
+
+git status
+→ check current state
+
+git add
+→ stage changes
+
+git commit
+→ save staged changes as a commit
+
+git log
+→ see commit history
+
+git branch
+→ see branches
+
+git switch
+→ change branches
+
+git merge
+→ combine branches
+
+git reset
+→ move/rewrite local history
+
+git update-ref -d HEAD
+→ remove the root/first commit reference
+
+git revert
+→ undo a commit by creating a new commit
+
+git rebase
+→ replay/rewrite commits
+
+git commit --amend
+→ modify latest commit
+
+git remote
+→ manage remote repositories
+
+git fetch
+→ download remote updates without integrating
+
+git pull
+→ fetch + integrate
+
+git push
+→ upload local commits to remote
+
+git stash
+→ temporarily hide unfinished changes
+
+git reflog
+→ recover previous local HEAD/reference states
+
+git cherry-pick
+→ apply one specific commit
+```
+
+# MOST IMPORTANT THING TO REMEMBER
+
+```text
+Working Directory
+       ↓
+    git add
+       ↓
+Staging Area
+       ↓
+   git commit
+       ↓
+Local Repository
+       ↓
+    git push
+       ↓
+     GitHub
+```
+
+And for undo:
+
+```text
+git reset --soft HEAD~1
+→ commit removed + changes staged
+
+git reset HEAD~1
+→ commit removed + changes unstaged
+
+git reset --hard HEAD~1
+→ commit removed + changes discarded
+
+git revert HEAD
+→ old commit stays + new undo commit
+
+git update-ref -d HEAD
+→ special case: remove the root/first commit reference
+```

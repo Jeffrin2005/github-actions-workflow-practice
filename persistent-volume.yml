@@ -1,0 +1,58 @@
+# 1. The Persistent Volume (The physical hard drive)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mongodb-pv
+spec:
+  capacity:
+    storage: 5Gi                 # Total size of the drive
+  accessModes:
+    - ReadWriteOnce              # Only one node can mount it for reading and writing at a time
+  hostPath:
+    path: "/mnt/data/mongodb"    # In a real cluster, this would be an AWS EBS volume or similar
+
+---
+# 2. The Persistent Volume Claim (The request/ticket for storage)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mongodb-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi               # We are claiming the 5Gi drive we created above
+
+---
+# 3. The Deployment (Using the Claim)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongodb
+  template:
+    metadata:
+      labels:
+        app: mongodb
+    spec:
+      containers:
+      - name: mongodb
+        image: mongo:latest
+        ports:
+        - containerPort: 27017
+        
+        # B. Mount the volume into the container's file system
+        volumeMounts:
+        - name: mongodb-data     # Must match the volume name below
+          mountPath: /data/db    # This is where MongoDB naturally saves data inside the container
+          
+      # A. Define the volume using the Claim
+      volumes:
+      - name: mongodb-data
+        persistentVolumeClaim:
+          claimName: mongodb-pvc # Points to the PVC we created in step 2

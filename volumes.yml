@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-with-volumes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: volume-demo
+  template:
+    metadata:
+      labels:
+        app: volume-demo
+    spec:
+      containers:
+      - name: my-app
+        image: nginx
+        # 2. Mount the volume INTO the container
+        volumeMounts:
+        - name: config-volume      # Must match the name below
+          mountPath: /etc/config   # Where the files appear inside the container
+        - name: secret-volume
+          mountPath: /etc/secrets
+          readOnly: true
+      
+      # 1. Define the volumes for the Pod
+      volumes:
+      - name: config-volume
+        configMap:
+          name: webapp-config      # The ConfigMap we made earlier
+      - name: secret-volume
+        secret:
+          secretName: hr-app-secrets # The Secret we made earlier

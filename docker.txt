@@ -1,0 +1,496 @@
+================================================================================
+🐳 DOCKER FUNDAMENTALS — INTERVIEW PREPARATION
+================================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. CORE CONCEPTS ⭐⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q1. What is Docker?
+→ Docker is an open-source platform that lets you package an application
+  and all its dependencies into a portable unit called a CONTAINER.
+  It ensures the app runs the same way on any machine.
+  "Works on my machine" problem — SOLVED.
+
+Q2. What problem does Docker solve?
+→ Dependency conflicts, environment inconsistency between dev/staging/prod.
+  Docker containers carry their own filesystem, libraries, and configs.
+
+Q3. What is the difference between a Container and a Virtual Machine?
+
+  Feature          | Container            | Virtual Machine
+  -----------------+----------------------+--------------------
+  OS               | Shares host OS kernel| Has its own OS
+  Startup time     | Seconds              | Minutes
+  Size             | MBs                  | GBs
+  Isolation        | Process-level        | Full hardware-level
+  Performance      | Near-native          | Slower (hypervisor)
+  Use case         | Microservices, apps  | Full OS isolation
+
+Q4. What is a Docker Image?
+→ A read-only template/blueprint used to create containers.
+  Built using a Dockerfile. Think of it like a CLASS in OOP.
+  Example: nginx:latest, node:18, python:3.11
+
+Q5. What is a Docker Container?
+→ A running instance of an image. Like an OBJECT from a class.
+  Containers are isolated, lightweight, and ephemeral by default.
+
+Q6. What is a Dockerfile?
+→ A text file with step-by-step instructions to build a Docker image.
+  Each instruction creates a LAYER in the image.
+
+Q7. What is Docker Hub?
+→ The default public registry for Docker images.
+  You can pull official images or push your own.
+  URL: https://hub.docker.com
+
+Q8. What is a Docker Registry?
+→ A storage and distribution system for Docker images.
+  Docker Hub = public registry.
+  You can have private registries (e.g., AWS ECR, GCR, Harbor).
+
+Q9. What is Docker Engine?
+→ The core runtime that runs on the host machine.
+  Components:
+  - Docker Daemon (dockerd) → background service managing containers
+  - Docker CLI (docker)     → command-line interface
+  - REST API               → communication layer between CLI & daemon
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. DOCKERFILE INSTRUCTIONS ⭐⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q10. Explain common Dockerfile instructions:
+
+  FROM        → Base image to start from (every Dockerfile must start here)
+                FROM node:18-alpine
+
+  WORKDIR     → Sets the working directory inside the container
+                WORKDIR /app
+
+  COPY        → Copies files from host to container
+                COPY . .
+
+  ADD         → Like COPY but also supports URLs and auto-extracts tar files
+                ADD app.tar.gz /app
+
+  RUN         → Executes commands at BUILD time (creates a new layer)
+                RUN npm install
+
+  CMD         → Default command to run when container STARTS
+                CMD ["node", "server.js"]
+                Only ONE CMD allowed; last one wins.
+
+  ENTRYPOINT  → Like CMD but not overrideable by default at runtime
+                ENTRYPOINT ["python", "app.py"]
+
+  ENV         → Sets environment variables
+                ENV NODE_ENV=production
+
+  EXPOSE      → Documents which port the container listens on (informational)
+                EXPOSE 3000
+
+  VOLUME      → Creates a mount point for persistent data
+                VOLUME ["/data"]
+
+  ARG         → Build-time variable (not available at runtime)
+                ARG VERSION=1.0
+
+  LABEL       → Adds metadata to the image
+                LABEL maintainer="you@email.com"
+
+Q11. What is the difference between CMD and ENTRYPOINT?
+
+  CMD         → Can be overridden from docker run command
+  ENTRYPOINT  → Always runs; CMD args are passed as arguments to ENTRYPOINT
+
+  Best practice: Use ENTRYPOINT for the main executable,
+                 CMD for default arguments.
+
+Q12. What is the difference between COPY and ADD?
+→ COPY: simple, only copies local files (PREFERRED)
+  ADD:  can fetch from URLs, auto-extracts archives (use sparingly)
+  Rule: Always prefer COPY unless you need ADD's extra features.
+
+Q13. What is a multi-stage build?
+→ Using multiple FROM statements in one Dockerfile.
+  Keeps the final image small by discarding build tools.
+
+  Example:
+  # Stage 1: Build
+  FROM node:18 AS builder
+  WORKDIR /app
+  COPY . .
+  RUN npm run build
+
+  # Stage 2: Production
+  FROM nginx:alpine
+  COPY --from=builder /app/dist /usr/share/nginx/html
+
+  Result: Final image is only ~20MB instead of ~900MB.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. ESSENTIAL DOCKER COMMANDS ⭐⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+--- IMAGE COMMANDS ---
+docker build -t myapp:1.0 .         → Build image from Dockerfile
+docker images                        → List all local images
+docker pull nginx                    → Pull image from registry
+docker push myrepo/myapp:1.0         → Push image to registry
+docker rmi image_id                  → Delete an image
+docker image prune                   → Remove unused images
+
+--- CONTAINER COMMANDS ---
+docker run nginx                     → Run container (foreground)
+docker run -d nginx                  → Run container in detached mode
+docker run -d -p 8080:80 nginx       → Map host port 8080 → container 80
+docker run -d --name webserver nginx → Give container a name
+docker ps                            → List running containers
+docker ps -a                         → List ALL containers (incl. stopped)
+docker stop container_id             → Gracefully stop (SIGTERM)
+docker kill container_id             → Force stop (SIGKILL)
+docker rm container_id               → Remove stopped container
+docker rm -f container_id            → Force remove running container
+
+--- INSPECT & DEBUG ---
+docker logs container_id             → View container logs
+docker logs -f container_id          → Follow/tail logs live
+docker exec -it container_id bash    → Open bash shell inside container
+docker inspect container_id          → Detailed JSON info about container
+docker stats                         → Live CPU/memory usage of containers
+docker top container_id              → Processes inside container
+
+--- CLEANUP ---
+docker system prune                  → Remove all unused resources
+docker system prune -a               → Remove everything unused
+
+Q14. What is the difference between docker stop and docker kill?
+→ docker stop → sends SIGTERM (graceful shutdown, app can clean up)
+  docker kill → sends SIGKILL (immediate force kill, no cleanup)
+  Always prefer docker stop first.
+
+Q15. What does -it flag mean in docker exec -it?
+→ -i = interactive (keep STDIN open)
+  -t = tty (allocate a pseudo-terminal)
+  Together: gives you an interactive shell session.
+
+Q16. What does -d flag mean?
+→ Detached mode. Container runs in background, returns you to terminal.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. NETWORKING ⭐⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q17. What is port mapping/publishing in Docker?
+→ Connecting a host machine port to a container port.
+  Syntax: docker run -p HOST_PORT:CONTAINER_PORT
+  Example: docker run -p 8080:80 nginx
+  → Browser hits localhost:8080 → forwards to container's port 80
+
+Q18. What are Docker network types?
+
+  bridge   → Default. Containers on same bridge can talk to each other.
+             Containers isolated from host unless port is published.
+  host     → Container shares the host's network stack. No isolation.
+             docker run --network=host nginx
+  none     → No networking at all. Complete isolation.
+  overlay  → For Docker Swarm; spans multiple Docker hosts.
+  macvlan  → Container gets its own MAC & IP on the network.
+
+Q19. How do containers communicate with each other?
+→ Create a custom bridge network:
+  docker network create mynet
+  docker run --network=mynet --name app1 myapp
+  docker run --network=mynet --name db mysql
+
+  Now app1 can reach db using hostname "db". Docker has built-in DNS.
+
+Q20. What is Docker DNS?
+→ Docker's internal DNS resolves container names to IPs automatically
+  within the same user-defined network. NOT available on default bridge.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. VOLUMES & STORAGE ⭐⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q21. Are containers stateless? What happens to data when a container stops?
+→ By default, containers are ephemeral. All data inside is LOST when the
+  container is removed. Use volumes for persistent data.
+
+Q22. What are the three storage options in Docker?
+
+  1. Volumes  → Managed by Docker. Stored in /var/lib/docker/volumes/
+               Best practice for persistent data.
+               docker run -v myvolume:/data nginx
+
+  2. Bind Mounts → Maps a specific host directory to container directory.
+                   docker run -v /home/user/data:/data nginx
+                   Used in development for live code reload.
+
+  3. tmpfs Mounts → Stored in host's memory only. Never written to disk.
+                    For sensitive/temporary data.
+
+Q23. What is the difference between a Volume and a Bind Mount?
+
+  Volume               | Bind Mount
+  ---------------------+---------------------------
+  Managed by Docker    | Managed by you (host path)
+  Portable             | Host-path dependent
+  Best for production  | Best for development
+  docker volume create | Just specify a host path
+
+Q24. How do you persist database data in Docker?
+→ Mount a volume to the database data directory:
+  docker run -d -v pgdata:/var/lib/postgresql/data postgres
+  Data survives container restarts/removals.
+
+Q25. Useful volume commands:
+  docker volume create myvolume
+  docker volume ls
+  docker volume inspect myvolume
+  docker volume rm myvolume
+  docker volume prune   → Remove all unused volumes
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. DOCKER COMPOSE ⭐⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q26. What is Docker Compose?
+→ A tool for defining and running multi-container Docker applications.
+  You define all services in a single docker-compose.yml file.
+  One command to start everything: docker compose up
+
+Q27. What is a docker-compose.yml file?
+→ A YAML file that declares: services, networks, volumes.
+
+  Example:
+  ─────────────────────────────────────────────────
+  version: "3.8"
+
+  services:
+    web:
+      build: .
+      ports:
+        - "3000:3000"
+      depends_on:
+        - db
+      environment:
+        - DATABASE_URL=postgres://user:pass@db:5432/mydb
+
+    db:
+      image: postgres:15
+      volumes:
+        - pgdata:/var/lib/postgresql/data
+      environment:
+        - POSTGRES_PASSWORD=pass
+
+  volumes:
+    pgdata:
+  ─────────────────────────────────────────────────
+
+Q28. Essential Docker Compose commands:
+  docker compose up               → Start all services (foreground)
+  docker compose up -d            → Start all services (detached)
+  docker compose up --build       → Rebuild images before starting
+  docker compose down             → Stop and remove containers/networks
+  docker compose down -v          → Also remove volumes
+  docker compose ps               → List running services
+  docker compose logs             → View all services logs
+  docker compose logs -f web      → Follow logs for specific service
+  docker compose exec web bash    → Shell into a running service
+  docker compose restart web      → Restart a specific service
+
+Q29. What is depends_on in Docker Compose?
+→ Controls startup ORDER of services.
+  IMPORTANT: It only waits for the container to START, not for the
+  service inside to be READY (e.g., DB might still be initializing).
+  Use health checks or wait scripts for true readiness.
+
+Q30. What is the difference between docker compose up --build vs docker compose up?
+→ --build → forces Docker to rebuild images before starting.
+  Without --build → uses cached images (faster but may miss code changes).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. IMAGE LAYERS & CACHING ⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q31. What are image layers?
+→ Every instruction in a Dockerfile creates a read-only LAYER.
+  Layers are cached and reused between builds.
+  Containers add a thin writable layer on top (copy-on-write).
+
+Q32. How does Docker layer caching work?
+→ Docker caches each layer. If a layer hasn't changed, it reuses the
+  cache. Once one layer changes, ALL subsequent layers are rebuilt.
+
+  BAD ORDER (cache breaks often):
+  COPY . .           ← changes every time
+  RUN npm install    ← re-runs unnecessarily
+
+  GOOD ORDER (cache-friendly):
+  COPY package.json .  ← rarely changes
+  RUN npm install      ← cached unless package.json changes
+  COPY . .             ← changes often, but npm install is cached
+
+Q33. What is .dockerignore?
+→ Like .gitignore but for Docker. Prevents files from being sent to the
+  build context (Docker daemon), speeding up builds.
+  Common entries: node_modules, .git, .env, *.log, dist/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. SECURITY BEST PRACTICES ⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q34. What is the risk of running containers as root?
+→ If the container is compromised, attacker could get root on host.
+  Best practice: Add a non-root user in Dockerfile.
+  RUN adduser --disabled-password appuser
+  USER appuser
+
+Q35. How do you pass secrets to containers safely?
+→ NEVER bake secrets into Dockerfile or image layers.
+  Options:
+  - Environment variables at runtime:  docker run -e DB_PASS=secret
+  - .env files (not committed to git):  docker compose --env-file .env
+  - Docker Secrets (Swarm)
+  - Mount secrets as files/volumes
+  - External secret managers (Vault, AWS SSM)
+
+Q36. What are some Docker security best practices?
+  ✓ Use official/minimal base images (alpine variants)
+  ✓ Run containers as non-root user
+  ✓ Scan images for vulnerabilities (docker scout, Trivy, Snyk)
+  ✓ Use .dockerignore to avoid leaking sensitive files
+  ✓ Don't store secrets in images or env vars in Dockerfile
+  ✓ Set resource limits (--memory, --cpus)
+  ✓ Use read-only filesystems where possible (--read-only)
+  ✓ Keep base images updated
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. CONTAINER LIFECYCLE ⭐⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q37. What are the states of a Docker container?
+  Created  → Container created but not started
+  Running  → Container is actively running
+  Paused   → Container processes are paused (frozen)
+  Stopped  → Container has exited
+  Deleted  → Container has been removed
+
+Q38. What is the difference between docker pause and docker stop?
+→ docker pause  → freezes the container (processes suspended, still in memory)
+  docker stop   → gracefully terminates the container
+  docker start  → restarts a stopped container (keeps data in writable layer)
+
+Q39. What is --restart policy?
+→ Tells Docker what to do if a container exits unexpectedly.
+  --restart=no            → Never restart (default)
+  --restart=always        → Always restart
+  --restart=on-failure    → Restart only on non-zero exit code
+  --restart=unless-stopped → Always restart unless manually stopped
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. RESOURCE LIMITS ⭐
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q40. How do you limit container resources?
+  docker run --memory="256m" --cpus="0.5" myapp
+  → Limits container to 256MB RAM and half a CPU core.
+  Without limits, a container can consume all host resources.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 DOCKER SCENARIO QUESTIONS (INTERVIEW GOLD)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCENARIO 1: Your container starts and immediately exits. How do you debug it?
+
+  Step 1: docker ps -a                    → Find the exited container
+  Step 2: docker logs <container_id>      → Read the error message
+  Step 3: docker inspect <container_id>   → Check exit code, config
+  Step 4: docker run -it <image> bash     → Open shell to investigate
+          (Override CMD to debug interactively)
+
+  Common causes:
+  - Application crashed on startup
+  - Missing environment variable
+  - Missing config file
+  - CMD/ENTRYPOINT misconfigured
+
+─────────────────────────────────────────────────────────
+
+SCENARIO 2: Your Docker image is too large. How do you reduce its size?
+
+  → Use a smaller base image (node:18-alpine instead of node:18)
+  → Use multi-stage builds (separate build & runtime stages)
+  → Chain RUN commands with && to reduce layers
+  → Clean up caches in the same RUN step:
+     RUN apt-get update && apt-get install -y curl \
+         && rm -rf /var/lib/apt/lists/*
+  → Use .dockerignore to exclude unnecessary files
+
+─────────────────────────────────────────────────────────
+
+SCENARIO 3: Your app in Docker can't connect to the database container.
+
+  Check:
+  1. Are both containers on the same Docker network?
+     docker network inspect <network_name>
+  2. Are you using the service name (not localhost) to connect?
+     In Docker Compose: host = db (service name), NOT 127.0.0.1
+  3. Is the DB actually healthy and accepting connections?
+     docker logs <db_container>
+  4. Is the port exposed correctly?
+     docker inspect <db_container>
+
+─────────────────────────────────────────────────────────
+
+SCENARIO 4: How would you deploy a Node.js app with Docker?
+
+  Step 1: Write Dockerfile
+  ─────────────────────────
+  FROM node:18-alpine
+  WORKDIR /app
+  COPY package*.json ./
+  RUN npm ci --only=production
+  COPY . .
+  EXPOSE 3000
+  USER node
+  CMD ["node", "server.js"]
+  ─────────────────────────
+  Step 2: Build → docker build -t myapp:1.0 .
+  Step 3: Test locally → docker run -d -p 3000:3000 myapp:1.0
+  Step 4: Push → docker push myrepo/myapp:1.0
+  Step 5: Deploy on server → docker pull & docker run
+
+─────────────────────────────────────────────────────────
+
+SCENARIO 5: Disk space on Docker host is running out. What do you do?
+
+  docker system df                → Show Docker disk usage
+  docker system prune             → Remove unused: stopped containers,
+                                    dangling images, unused networks
+  docker system prune -a          → Also remove unused images
+  docker volume prune             → Remove unused volumes
+  docker image prune -a           → Remove all unused images
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 QUICK REFERENCE CHEAT SHEET
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CONCEPT          → ANALOGY
+Image            → Class / Blueprint
+Container        → Object / Running instance
+Dockerfile       → Recipe to build an image
+Volume           → External hard drive for container
+Network          → LAN between containers
+Docker Hub       → GitHub for images
+Docker Compose   → Orchestrator for local multi-container apps
+
+STAR RATING KEY:
+⭐         = Nice to know
+⭐⭐       = Important
+⭐⭐⭐     = Must know for interviews
+
+================================================================================
