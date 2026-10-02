@@ -1,0 +1,123 @@
+pipeline { 
+    agent any
+
+    // Optional: Define global environment variables just like we did in GitHub Actions!
+    environment {
+        APP_VERSION = "latest"
+    }
+
+    stages { 
+        
+        // ---------------------------------------------------------
+        // PHASE 1: CI (Testing in Parallel)
+        // ---------------------------------------------------------
+        stage('Run Tests') {
+            parallel {
+                stage('Test Backend') { 
+                    steps {
+                        echo "Downloading backend code..."
+                        sh "npm install" 
+                        sh "npm run test" 
+                    }
+                }
+                stage('Test Frontend') {
+                    steps { 
+                        echo "Downloading frontend code..."
+                        sh "npm install"
+                        sh "npm run test" 
+                    }
+                }
+            }
+        }
+        
+        // ---------------------------------------------------------
+        // PHASE 2: CD (Build and Push in Parallel)
+        // ---------------------------------------------------------
+        stage('Build Docker Images') { 
+            parallel {
+                
+                stage('Build Backend Image') { 
+                    steps { 
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'docker-hub-credentials',
+                                passwordVariable: 'DOCKER_PASS', 
+                                usernameVariable: 'DOCKER_USER'
+                            )
+                        ]) {
+                            echo "Logging into Docker Hub..."
+                            sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                            
+                            echo "Building and Pushing Backend..."
+                            sh "docker build -t ${DOCKER_USER}/hr-backend:${APP_VERSION} ." 
+                            sh "docker push ${DOCKER_USER}/hr-backend:${APP_VERSION}"
+                        }
+                    }
+                }
+                
+                stage('Build Frontend Image') { 
+                    steps { 
+                        withCredentials([
+                            usernamePassword(
+                                credentialsId: 'docker-hub-credentials',
+                                passwordVariable: 'DOCKER_PASS', 
+                                usernameVariable: 'DOCKER_USER'
+                            )
+                        ]) {
+                            echo "Logging into Docker Hub..."
+                            sh "docker login -u ${DOCKER_USER} -p ${DOCKER_PASS}"
+                            
+                            echo "Building and Pushing Frontend..."
+                            sh "docker build -t ${DOCKER_USER}/hr-frontend:${APP_VERSION} ." 
+                            sh "docker push ${DOCKER_USER}/hr-frontend:${APP_VERSION}"
+                        }
+                    }
+                }
+                
+            } // End parallel
+        }
+        
+        // ---------------------------------------------------------
+        // PHASE 3: CD (The ArgoCD / GitOps Method)
+        // ---------------------------------------------------------
+        stage('Deploy (ArgoCD Method)') {
+            steps {
+                echo "Updating Git Repository with new image version: ${APP_VERSION}"
+                
+                // Instead of talking to K8s, we just push the change to Git!
+                sh "git commit -am 'Update application to ${APP_VERSION}'"
+                sh "git push origin main"
+                
+                echo "ArgoCD will automatically detect this change and deploy it to Kubernetes!"
+            }
+        }
+        
+    } // End stages
+    
+    // ---------------------------------------------------------
+    // POST PHASE: The Cleanup and Notifications
+    // ---------------------------------------------------------
+    post {
+        success {
+            // Sends a green message to the team Slack channel
+            slackSend(
+                channel: '#deployments', 
+                color: 'good', 
+                message: "✅ SUCCESS: Job ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed safely!"
+            )
+        }
+        failure {
+            // Sends a red email to the developers with a link to the logs
+            emailext(
+                to: 'dev-team@yourcompany.com',
+                subject: "🚨 FAILED: Job ${env.JOB_NAME} [${env.BUILD_NUMBER}]",
+                body: "The pipeline failed. Please check the logs immediately here: ${env.BUILD_URL}"
+            )
+        }
+        always {
+            // This runs no matter what happens to clean up the hard drive
+            echo "Wiping temporary workspace files to save disk space..."
+            cleanWs()
+        }
+    }
+}
